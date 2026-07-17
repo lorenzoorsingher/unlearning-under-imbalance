@@ -142,7 +142,7 @@ def forget(
         num_workers=4 * accelerator.num_processes,
     )
 
-    if args.method in ["PV", "PV7", "PVINLP", "LUNAR"]:
+    if args.method in ["PV7"]:
         sweep_forget_dataloader = DataLoader(
             multimodal_forget_dataset,
             batch_size=args.batch_size * 1,
@@ -291,7 +291,7 @@ def forget(
                 time_budget=time_budget,
             )
         # Persona Unlearning ===============================================0
-        elif args.method in ["PV", "PV7", "PVINLP"]:
+        elif args.method in ["PV7"]:
             if not hasattr(args, 'target_attr') or args.target_attr is None:
                 target, protected = splits["target_protected"]
                 args.target_attr = target.split("+")[0]

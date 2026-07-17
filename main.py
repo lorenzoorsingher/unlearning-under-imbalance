@@ -18,11 +18,7 @@ from transformers import (
 
 import wandb
 from dotenv import load_dotenv
-from data_process.data_classes import (
-    IDE_train_Dataset,
-    train_collate_fn_qwen_mixed,
-    train_collate_fn_qwen_mixed_fttp,
-)
+
 from auto_eval import run_auto_eval
 from finetune import finetune
 from forget import forget
@@ -238,11 +234,6 @@ def main(args):
         )
         args.val_retain_ids = [int(x) for x in val_retain_ids]
         args.val_forget_ids = [int(x) for x in val_forget_ids]
-
-    if args.method in ["FTTP", "FTTP_GD"]:
-        collate_fn = train_collate_fn_qwen_mixed_fttp
-    else:
-        collate_fn = train_collate_fn_qwen_mixed
 
     model, processor = load_model_and_processor(args, accelerator)
 
@@ -565,12 +556,7 @@ def get_parser():
             "PO",
             "RL",
             "SimNPO",
-            "PV",
-            "PV6",
             "PV7",
-            "PVINLP",
-            "FTTP",
-            "FTTP_GD",
             "MIU",
             "MIU_INTERLEAVED",
             "LUNAR",

@@ -1012,137 +1012,6 @@ def train_collate_fn_qwen_mixed(examples, processor, args=None, generation=False
     return (batch, texts, gts, ids)
 
 
-def train_collate_fn_qwen_mixed_fttp(examples, processor, args=None, generation=False):
-    """
-    A data collator function for Qwen that processes the input text and images,
-    and ensures the number of image tokens matches the number of images.
-    """
-
-    conversations = []
-    all_images = []
-    texts = []
-    enc_texts = []
-    gts = []
-    ids = []
-
-    processor_model = type(processor).__name__
-
-    add_generation_prompt = False
-    if generation:
-        add_generation_prompt = True
-        processor.tokenizer.padding_side = "left"
-
-    # Derive the assistant end-of-prompt tokens dynamically from the tokenizer
-    end_of_prompt = _get_assistant_delimiter_tokens(processor)
-
-    for sample in examples:
-        conversation = sample["prompt"]
-        image = sample["image"]
-        ids.append(sample.get("ID", None))
-        gts.append(sample.get("gt", None))
-
-        if image == -1:
-            # conversation comes with an image field even when dealing with text-only samples. This is due to
-            # idefics not being able to handle mixed batches of text-only and text-image samples.
-
-            image = Image.new("RGB", (32, 32), (0, 0, 0))
-            all_images.append([image])
-
-        else:
-            all_images.append(image)
-
-        # Qwen wants the image to be in the conversation, not in a separate list.
-        if processor_model == "Qwen2_5_VLProcessor":
-            conversation[0]["content"][0]["image"] = image
-
-        conversations.append(conversation)
-
-        # Convert the conversation into a text template
-        text = processor.apply_chat_template(
-            conversation, add_generation_prompt=add_generation_prompt, tokenize=False
-        )
-
-        texts.append(text)
-
-        enc_words = []
-        # find words
-
-        maxlen = 10
-        curlen = 1
-        encoded = processor.tokenizer.encode(text)
-
-        # a_words = sample["words"]["a"] + [" " + a for a in sample["words"]["a"]] + [a + " " for a in sample["words"]["a"]]
-
-        for _ in range(maxlen):
-            for i in range(len(encoded) - curlen):
-                if (
-                    processor.tokenizer.decode(encoded[i : i + curlen]).strip()
-                    in sample["words"]["a"]
-                ):
-                    enc_words.append(encoded[i : i + curlen])
-                if len(enc_words) >= 2:
-                    break
-            curlen += 1
-        # print(len(enc_words), "->", len(sample["words"]["a"]))
-        enc_texts.append(enc_words)
-
-    if processor_model == "Qwen2_5_VLProcessor":
-        all_images, _ = process_vision_info(conversations)
-
-    batch = processor(
-        text=texts,
-        images=all_images,
-        padding=True,
-        return_tensors="pt",
-        max_length=280,
-        truncation=True,
-    )
-
-    # masking everything that comes before the assistant response
-    labels = batch["input_ids"].clone()
-
-    end_of_prompt = end_of_prompt.to(device=labels.device)
-
-    labels_r = labels.clone()
-    labels_f = labels.clone()
-    for batch_idx, label_seq in enumerate(labels):
-        keep_mask = torch.zeros_like(label_seq, dtype=torch.bool)
-
-        prompt_end = 0
-        # looping in reverse to find the last occurrence of the end of prompt token sequence
-        for i in range(len(label_seq) - len(end_of_prompt) + 1)[::-1]:
-            if torch.equal(label_seq[i : i + len(end_of_prompt)], end_of_prompt):
-                keep_mask[i + len(end_of_prompt) :] = True
-                prompt_end = i
-                break
-
-        # Mask all tokens EXCEPT the ones we want to keep (either entire assistant response or target words only)
-
-        enc_words = enc_texts[batch_idx]
-        hide_mask = torch.zeros_like(labels[batch_idx], dtype=torch.bool)
-        for word in enc_words:
-            word = torch.Tensor(word).int()
-            for i in range(len(labels[batch_idx]) - len(word) + 1)[::-1]:
-                if torch.equal(labels[batch_idx][i : i + len(word)], word):
-                    hide_mask[i : i + len(word)] = True
-                    # print(processor.tokenizer.decode(word))
-                    # print(i, ":", )
-        # labels[batch_idx][~keep_mask] = -100
-
-        labels_r[batch_idx][~keep_mask | hide_mask] = -100
-        labels_f[batch_idx][~keep_mask | ~hide_mask] = -100
-        labels[batch_idx][~keep_mask] = -100
-
-    batch["labels"] = labels
-    batch["labels_r"] = labels_r
-    batch["labels_f"] = labels_f
-    # breakpoint()
-
-    # processor.tokenizer.decode(labels_f.abs())
-    # processor.tokenizer.decode(labels_r.abs())
-    return (batch, texts, gts, ids)
-
-
 def eval_collate_fn_qwen(examples, processor):
 
     IDs = []
@@ -1329,11 +1198,7 @@ if __name__ == "__main__":
 
         sample = train_dataset[0]
         collate_fn = train_collate_fn_qwen_mixed
-        # collate_fn = train_collate_fn_qwen_mixed_fttp
 
-        # for sample in train_dataset:
-        #     batch, text, _, _ = collate_fn([sample], processor)
-        #     pass
         train_collate_fn_qwen_mixed([sample], processor)
         breakpoint()
         train_dataloader = DataLoader(

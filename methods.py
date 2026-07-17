@@ -80,9 +80,6 @@ def persona_epoch7(
     time_budget=None,
 ):
 
-    if args.method == "PVINLP" and args.beta not in [5,6,8]:
-        print("[WARNING] mode set to PVINLP but beta != 5, 6, 8.")
-
     target_layers = [int(x) for x in args.target_layers.split("-")]
     n_hidden_layers = model.module.config.text_config.num_hidden_layers
     layer_list = list(range(n_hidden_layers))
@@ -641,81 +638,6 @@ def rlpo_interleaved_epoch(
     return loss.item()
 
 
-def fttp_gd_interleaved_epoch(
-    dataloader_f,
-    dataloader_r,
-    model,
-    optimizer,
-    lr_scheduler,
-    accelerator,
-    args=None,
-    time_budget=None,
-    processor=None,
-):
-
-    epoch_start = time.time()
-    time_exceeded = False
-    retain_iter = iter(dataloader_r)
-    progress_bar = tqdm(total=len(dataloader_f), desc="FTTP_GD Interleaved")
-
-    for step, data_f in enumerate(dataloader_f):
-        if time_exceeded:
-            break
-        if time_budget is not None and (time.time() - epoch_start) > time_budget:
-            time_exceeded = True
-        if time_budget is not None:
-            time_exceeded = _sync_stop_flag(time_exceeded, accelerator)
-
-        batch_f, plaintext_f, gts_f, ids_f = data_f
-
-        try:
-            data_r = next(retain_iter)
-        except StopIteration:
-            retain_iter = iter(dataloader_r)
-            data_r = next(retain_iter)
-        batch_r, plaintext_r, gts_r, ids_r = data_r
-
-        optimizer.zero_grad()
-
-        batch_f["labels"] = batch_f["labels_r"]
-        outputs_r_forget = model(**batch_f)
-        batch_f["labels"] = batch_f["labels_f"]
-        outputs_f_forget = model(**batch_f)
-        loss_fttp = -outputs_f_forget.loss * args.beta + outputs_r_forget.loss * (1 - args.beta)
-
-        outputs_r = model(**batch_r)
-        loss_retain = outputs_r.loss
-
-        loss = loss_fttp + loss_retain
-
-        accelerator.backward(loss)
-        accelerator.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-        optimizer.step()
-        lr_scheduler.step()
-
-        accelerator.log(
-            {
-                "loss": loss.item(),
-                "fttp_loss": loss_fttp.item(),
-                "retain_loss": loss_retain.item(),
-                "lr": lr_scheduler.get_last_lr()[0],
-            },
-            step=step,
-        )
-
-        if args.debug > 0:
-            return loss.item()
-
-        if accelerator.is_main_process:
-            progress_bar.update(1)
-            progress_bar.set_postfix_str(
-                f"loss: {loss.item():.4f} | lr: {lr_scheduler.get_last_lr()[0]:.7f}"
-            )
-
-    return loss.item()
-
-
 def GA_epoch(
     dataloader,
     model,
@@ -748,70 +670,6 @@ def GA_epoch(
 
         outputs = model(**batch)
         loss = -outputs.loss
-
-        accelerator.backward(loss)
-        accelerator.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-        if mask is not None:
-            for name, param in model.named_parameters():
-                if name in mask:
-                    param.grad *= mask[name]
-
-        optimizer.step()
-        lr_scheduler.step()
-
-        accelerator.log(
-            {"loss": loss.item(), "lr": lr_scheduler.get_last_lr()[0]},
-            step=step,
-        )
-
-        if args.debug > 0:
-            return loss.item()
-
-        if accelerator.is_main_process:
-            progress_bar.update(1)
-            progress_bar.set_postfix_str(
-                f"loss: {loss.item():.4f} | lr: {lr_scheduler.get_last_lr()[0]:.7f}"
-            )
-
-    return loss.item()
-
-
-def FTTP_epoch(
-    dataloader,
-    model,
-    optimizer,
-    lr_scheduler,
-    accelerator,
-    mask=None,
-    args=None,
-    # budget=-1,
-    processor=None,
-    time_budget=None,
-):
-
-    epoch_start = time.time()
-    time_exceeded = False
-    total_loss = 0
-    progress_bar = tqdm(total=len(dataloader), desc="FTTP Training")
-
-    for step, data in enumerate(dataloader):
-        if time_exceeded:
-            break
-        if time_budget is not None and (time.time() - epoch_start) > time_budget:
-            time_exceeded = True
-        if time_budget is not None:
-            time_exceeded = _sync_stop_flag(time_exceeded, accelerator)
-
-        batch, plaintext, gts, ids = data
-
-        optimizer.zero_grad()
-
-        batch["labels"] = batch["labels_r"]
-        outputs_r = model(**batch)
-        batch["labels"] = batch["labels_f"]
-        outputs_f = model(**batch)
-        loss = -outputs_f.loss * args.beta + outputs_r.loss * (1 - args.beta)
 
         accelerator.backward(loss)
         accelerator.clip_grad_norm_(model.parameters(), max_norm=1.0)

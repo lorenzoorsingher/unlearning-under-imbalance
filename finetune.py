@@ -41,10 +41,6 @@ def finetune(
             [multimodal_dataset, vqav2_dataset]
         )
         collate_fn = train_collate_fn_qwen_mixed
-        # VQA samples have sentinel values for ID/gt/words fields.
-        # Methods that rely on these fields (e.g., PV*, FTTP) will not work
-        # correctly with a mixed dataset. Only use --mixed with methods that
-        # only need the conversation text and images.
 
     train_dataloader = DataLoader(
         multimodal_dataset,
@@ -60,10 +56,6 @@ def finetune(
         train_dataloader,
         lr_scheduler,
     )
-
-    # # set static graph to avoid DDP errors while computing multiple
-    # # forward passes during the distillation step
-    # accelerator.unwrap_model(model)._set_static_graph()
 
     for epoch in range(args.num_epochs):
         model.train()
