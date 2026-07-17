@@ -502,7 +502,7 @@ def get_parser():
     parser.add_argument(
         "--warmup",
         type=int,
-        default=0,
+        default=50,
         help="Number of warmup steps for learning rate scheduler",
     )
 
