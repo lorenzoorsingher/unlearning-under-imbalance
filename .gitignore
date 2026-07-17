@@ -16,7 +16,6 @@ test_imgs/
 data_process/data/dataset*
 data_process/data/*/*json
 data_process/data/*json
-LUNAR/
 group-robust_machine_unlearning/
 nullspace_projection
 dump/
