@@ -577,7 +577,7 @@ def compute_run_metrics(
                             else 0.0,
                         }
                     )
-
+                    
             results[media].setdefault("global", {})["gap"] = results[media]["retain"]["gen"] -  results[media]["forget"]["gen"]
 
             if len(mink_scores) > 0 and len(set(mink_labels)) > 1:
@@ -626,4 +626,11 @@ def write_metrics_csv(metrics, run_name, out_dir):
 
 
 if __name__ == "__main__":
+
+
+    out_dir = "/leonardo_scratch/large/userexternal/lorsingh/testruns2/sweep_simNPO/1b94f663/eval/model_20260717_162435_f120/run_0"
+    hf_dataset = "argmaxxer/FAIRGET"
+
+    metrics = compute_run_metrics(out_dir, hf_dataset=hf_dataset)
+    breakpoint()
     pass
