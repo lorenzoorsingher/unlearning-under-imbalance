@@ -27,31 +27,63 @@ conda create -n myenv python=3.11
 conda activate myenv
 pip install -r requirements.txt
 pip install flash-attn==2.6.1 --no-build-isolation
-```
-
----
-
-## Dataset
-
-`hf download --repo-type dataset argmaxxer/FAIRGET` 
+``` 
 
 ---
 
 ## Finetuning
 
-```python
-print("hello")
+For fine-tuning a new retain-only model (gold-standard baseline):
+
+```bash
+accelerate launch --mixed_precision bf16 main.py \
+  --finetune \
+  --model_id Qwen/Qwen2.5-VL-7B-Instruct \
+  --save_dir <OUTPUT_DIR>/model \
+  --eval_output_dir <OUTPUT_DIR>/eval \
+  --splits_path data/<SPLIT>.json \
+  --batch_size 16 \
+  --lr 2e-5 \
+  --lora_rank 64 \
+  --lora_all_modules \
+  --num_epochs 2 \
+  --target_size 256 \
+  --warmup 500 \
+  --mixed 0.15
 ```
+
 ---
 
 ## Unlearning
 
+The general command follows the pattern of:
+
 ```python
-print("hello")
+accelerate launch --mixed_precision bf16 main.py \
+  --forget \
+  --model_id Qwen/Qwen2.5-VL-7B-Instruct \
+  --cache_dir <FINE_TUNED_CHECKPOINT_DIR> \
+  --save_dir <OUTPUT_MODEL_DIR> \
+  --eval_output_dir <OUTPUT_EVAL_DIR> \
+  --hf_dataset argmaxxer/FAIRGET \
+  --splits_path data/<SPLIT>.json \
+  --batch_size 8 \
+  --lr <LR> \
+  --target_size 256 \
+  --method <METHOD> \
+  --ray_tune_report
 ```
+more examples are available in [BASELINES.md](./BASELINES.md) 
 
 ## Evaluation
 
+Evaluation can be ran standalone with:
+
 ```python
-print("hello")
+python auto_eval.py \
+--model_id Qwen/Qwen2.5-VL-7B-Instruct \
+--save_dir Qwen/Qwen2.5-VL-7B-Instruct or <MODEL_DIR>  \
+--hf_dataset argmaxxer/FAIRGET \
+--splits_path  data/split_lowadult50.json \
+--eval_output_dir <OUTPUT_EVAL_DIR>
 ```

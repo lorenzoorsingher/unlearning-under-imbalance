@@ -398,8 +398,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    if not os.path.isdir(args.save_dir):
-        raise ValueError(f"--save_dir is not a valid directory: {args.save_dir}")
+    # if not os.path.isdir(args.save_dir):
+    #     raise ValueError(f"--save_dir is not a valid directory: {args.save_dir}")
 
     with open(args.splits_path, "r") as f:
         splits = json.load(f)
@@ -415,3 +415,10 @@ def main():
 if __name__ == "__main__":
 
     main()
+
+
+# python auto_eval.py \
+# --mode_id Qwen/Qwen2.5-VL-7B-Instruct \
+# --save_dir Qwen/Qwen2.5-VL-7B-Instruct  \
+# --splits_path  data/split_lowadult50.json
+

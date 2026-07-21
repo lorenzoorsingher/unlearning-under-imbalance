@@ -1102,32 +1102,19 @@ if __name__ == "__main__":
 
     args.splits_path = "data/split_base_2k_small.json"
 
-    ################################
     processor = AutoProcessor.from_pretrained(args.model_id, do_image_splitting=False)
 
-    if "Qwen" in args.model_id:
-        special_tokens = ["<image>", "<pad>"]
-        processor.tokenizer.padding_side = "right"  # Ensure right padding
-        processor.tokenizer.add_tokens(special_tokens, special_tokens=True)
-        processor.tokenizer.additional_special_tokens = list(
-            set(processor.tokenizer.additional_special_tokens or [])
-            | set(special_tokens)
-        )
-        processor.tokenizer.pad_token = "<pad>"
-    elif "Idefics" in args.model_id:
-        pass
 
     with open(args.splits_path, "r") as f:
         splits = json.load(f)
-    # ide_ids = [i for i in range(10)]
-    # ide_ids = None
+
     ids_retain = splits["retain"]  # use the retain split for training
     ids_forget = splits["forget"]  # use the forget split for forgetting
 
-    TESTIN = "train"
+    TESTING = "train"
 
     # ===================== testing the FAIRNESS dataset ===================== #
-    if TESTIN == "fairness":
+    if TESTING == "fairness":
 
         fair_dataset = IDE_fairness_Dataset(
             hf_dataset=args.hf_dataset,
@@ -1136,26 +1123,13 @@ if __name__ == "__main__":
             protected_attribute="all",
             log=True,
         )
-        # breakpoint()
-        # 20000
-        # fair_dataloader = DataLoader(
-        #     fair_dataset,
-        #     batch_size=64,
-        #     shuffle=True,
-        #     num_workers=4,
-        #     pin_memory=True,
-        #     collate_fn=lambda x: eval_collate_fn_qwen(x, processor),
-        # )
+
 
         for sample in fair_dataset:
-            breakpoint()
-
             inputs, inputs_mia, text, gts, IDs, attributes, metadatas = eval_collate_fn_qwen([sample], processor)
 
-            # processor.tokenizer.decode(inputs["input_ids"][0])
-            # processor.tokenizer.decode(inputs_mia["input_ids"][0])
     # ===================== testing the EVAL dataset =================
-    elif TESTIN == "eval":
+    elif TESTING == "eval":
 
         eval_dataset = IDE_eval_Dataset(
             hf_dataset=args.hf_dataset,
@@ -1166,26 +1140,12 @@ if __name__ == "__main__":
             log=True,
         )
 
-        # for sample in eval_dataset:
-        #     # breakpoint()
-        #     batch = eval_collate_fn_qwen([sample], processor)
+        for sample in eval_dataset:
+            batch = eval_collate_fn_qwen([sample], processor)
 
-        eval_dataloader = DataLoader(
-            eval_dataset,
-            batch_size=4,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            collate_fn=lambda x: eval_collate_fn_qwen(x, processor),
-        )
-
-        for sample in tqdm(eval_dataloader):
-            # breakpoint()
-            print(sample)
-            pass
 
     elif (
-        TESTIN == "train"
+        TESTING == "train"
     ):  # ===================== testing the TRAIN dataset ===================== #
 
         train_dataset = IDE_train_Dataset(
@@ -1197,33 +1157,11 @@ if __name__ == "__main__":
         )
 
         sample = train_dataset[0]
-        collate_fn = train_collate_fn_qwen_mixed
 
-        train_collate_fn_qwen_mixed([sample], processor)
-        breakpoint()
-        train_dataloader = DataLoader(
-            train_dataset,
-            batch_size=16,
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            collate_fn=lambda x: collate_fn(x, processor),
-        )
+        batch = train_collate_fn_qwen_mixed([sample], processor)
 
-        # breakpoint()
-        maxl = 0
-        for sample in train_dataloader:
-            batch, text, _, _ = sample
-            # maxl = max(maxl, batch.input_ids.shape[-1])
-            # pprint(f"{maxl}\t{batch.input_ids.shape[-1]}")
 
-            maxl += 1
-            if maxl >= 10:
-                breakpoint()
-
-                processor.tokenizer.decode(batch["labels_r"][0].abs())
-
-    elif TESTIN == "lunar":
+    elif TESTING == "lunar":
         
         train_dataset = LUNAR_train_dataset(
             nsamples=100,
@@ -1237,22 +1175,6 @@ if __name__ == "__main__":
 
 
         batch, text, _, _ = train_collate_fn_qwen_mixed([sample], processor)
-        breakpoint()
 
-        # batch, text, _, _ = train_collate_fn_qwen_mixed([sample], processor)
-        train_dataloader = DataLoader(
-            train_dataset,
-            batch_size=64,
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            collate_fn=lambda x: train_collate_fn_qwen_mixed(
-                x, processor
-            ),
-        )
 
-        for sample in train_dataloader:
-            batch, text, _, _ = sample
-            breakpoint()
-        processor.tokenizer.decode(batch.input_ids[0].abs())
 

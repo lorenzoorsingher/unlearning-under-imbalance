@@ -27,6 +27,9 @@ from utils import (
     WarmUpScheduler,
 )
 
+from data_process.data_classes import train_collate_fn_qwen_mixed
+
+
 def find_all_linear_names(model, args):
     cls = torch.nn.Linear
     lora_module_names = set()
@@ -330,7 +333,7 @@ def main(args):
             lr_scheduler,
             splits,
             target_size,
-            collate_fn,
+            train_collate_fn_qwen_mixed,
             processor
         )
         if accelerator.is_main_process and save_dir:
@@ -349,7 +352,7 @@ def main(args):
             lr_scheduler,
             splits,
             target_size,
-            collate_fn,
+            train_collate_fn_qwen_mixed,
             processor
         )
         if accelerator.is_main_process and save_dir:

@@ -68,7 +68,6 @@ def finetune(
             accelerator=accelerator,
             args=args,
             processor=processor,
-            val_dataset=val_dataset,
         )
 
         if epoch < args.num_epochs - 1 and args.checkpoint:
