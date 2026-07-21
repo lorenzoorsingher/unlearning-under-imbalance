@@ -28,6 +28,25 @@ conda activate myenv
 pip install -r requirements.txt
 pip install flash-attn==2.6.1 --no-build-isolation
 ``` 
+---
+
+## Dataset
+
+<div align="center">
+<img src="./images/grid_img1.jpg" width="75%">
+<img src="./images/grid_img2.jpg"width="75%">
+</div>
+
+### Visual data
+Face images are generated with StyleGAN2 and augmented per-identity with Arc2Face for intra-identity variability. Each image is labeled for **age, gender, and ethnicity** (via FairFace), and identities are **stratified-sampled** across these three attributes so every demographic combination is equally represented.
+
+### Textual data
+Each identity has 10 additional attributes (name, birthplace, residence, education, job, income, height, relationship status, political orientation, date of birth), assigned through **rule-based sampling**: some attributes correlate with visual traits for realism (e.g., education with age), others are sampled independently (e.g., political orientation). Q&A pairs are generated from templated questions populated with each identity's attribute values.
+
+### Unbalanced forget sets
+Unlike prior unlearning benchmarks, FAIRGET provides pre-built **unbalanced forget sets**, where requests to "unlearn" an identity skew toward specific demographic groups rather than being uniformly distributed, fairness-aware evaluation of unlearning methods.
+
+
 
 ---
 
