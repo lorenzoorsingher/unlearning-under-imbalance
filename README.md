@@ -1,9 +1,18 @@
-<h2 align="center"> <a href="https://arxiv.org/">Unlearning Under Imbalance: Benchmarking Fairness in Multimodal LLM Unlearning</a></h2>
+<h2 align="center"> <a href="https://github.com/lorenzoorsingher/unlearning-under-imbalance">Unlearning Under Imbalance: Benchmarking Fairness in Multimodal LLM Unlearning</a></h2>
 
-<div align="center">    
+<div align="center">
+
+#### [Lorenzo Orsingher](https://github.com/lorenzoorsingher), [Thomas De Min](https://scholar.google.com/citations?user=fnh_i0cAAAAJ&hl=en), [Massimiliano Mancini](https://scholar.google.com/citations?hl=it&authuser=1&user=bqTPA8kAAAAJ),</br> [Davide Talon](https://scholar.google.com/citations?user=IiMwp7EAAAAJ&hl=) and [Elisa Ricci](https://scholar.google.com/citations?user=xf1T870AAAAJ&hl=it&authuser=1) 
+
+<!-- [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b?style=flat-square&logo=arxiv)](https://arxiv.org/abs/XXXX.XXXXX) -->
+[![Project Page](https://img.shields.io/badge/Project-Page-blue?style=flat-square&logo=github)](https://lorenzoorsingher.github.io/unlearning-under-imbalance/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.4.0-EE4C2C?style=flat-square&logo=pytorch)](https://pytorch.org/)
+[![HuggingFace Dataset](https://img.shields.io/badge/🤗_Dataset-FAIRGET-FFD21E?style=flat-square)](https://huggingface.co/datasets/argmaxxer/FAIRGET)
+
 <img src="./images/dataset.png" width="100%" height="50%">
-</div>
 
+</div>
 
 ## Abstract
 
@@ -19,17 +28,6 @@ conda activate myenv
 pip install -r requirements.txt
 pip install flash-attn==2.6.1 --no-build-isolation
 ```
-
----
-
-## Quick Access
-
-[**ArXiv**](https://huggingface.co/datasets/argmaxxer/FAIRGET) [TBD]
-
-[**Huggingface**](https://huggingface.co/datasets/argmaxxer/FAIRGET)
-
-[**GitHub**](https://github.com/lorenzoorsingher/unlearning-under-imbalance)
-
 
 ---
 
