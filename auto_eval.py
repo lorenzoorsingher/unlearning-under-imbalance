@@ -415,10 +415,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-
-
-# python auto_eval.py \
-# --mode_id Qwen/Qwen2.5-VL-7B-Instruct \
-# --save_dir Qwen/Qwen2.5-VL-7B-Instruct  \
-# --splits_path  data/split_lowadult50.json
-

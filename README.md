@@ -30,6 +30,19 @@ pip install flash-attn==2.6.1 --no-build-isolation
 ``` 
 ---
 
+## Quick Start
+
+The typical pipeline consists of four steps:
+
+1. **Split preparation**  define which identities to forget vs. retain. Pre-built unbalanced splits are provided in `data/split_*.json`.
+2. **Fine-tuning**  train the MLLM on the full set of identities so the model learns all personal attributes.
+3. **Unlearning**  apply a forgetting method to remove the forget-set identities from the model while preserving general knowledge.
+4. **Evaluation**  measure forget quality (Exact Match, probability), privacy leakage (Min-K++ AUC), and fairness (Demographic Parity gap).
+
+Each step produces artifacts consumed by the next: `--cache_dir` in the unlearning command points to the fine-tuned checkpoint, and evaluation runs automatically after both fine-tuning and unlearning (or can be invoked standalone via `auto_eval.py`).
+
+---
+
 ## Dataset
 
 <div align="center">
@@ -44,9 +57,23 @@ Face images are generated with StyleGAN2 and augmented per-identity with Arc2Fac
 Each identity has 10 additional attributes (name, birthplace, residence, education, job, income, height, relationship status, political orientation, date of birth), assigned through **rule-based sampling**: some attributes correlate with visual traits for realism (e.g., education with age), others are sampled independently (e.g., political orientation). Q&A pairs are generated from templated questions populated with each identity's attribute values.
 
 ### Unbalanced forget sets
-Unlike prior unlearning benchmarks, FAIRGET provides pre-built **unbalanced forget sets**, where requests to "unlearn" an identity skew toward specific demographic groups rather than being uniformly distributed, fairness-aware evaluation of unlearning methods.
 
+Unlike prior unlearning benchmarks, FAIRGET provides pre-built **unbalanced forget sets**, where requests to "unlearn" an identity skew toward specific demographic groups rather than being uniformly distributed, enabling fairness-aware evaluation of unlearning methods.
 
+Pre-built splits in `data/` simulate progressively more challenging imbalance patterns by selecting a fraction of identities from a specific demographic intersection for the forget set, while the retain set contains the remaining identities:
+
+| Split file | Protected group | Forget fraction |
+|---|---|---|
+| `split_lowadult*.json` | Low income + adult | 10-50-90%% |
+| `split_rightmale*.json` | Right-leaning + male | 10-50-90% |
+| `split_tallfemale*.json` | Tall + female | 10-50-90% |
+| `split_singleasian*.json` | Single + Asian | 10-50-90%% |
+| `split_10mixed75.json` | Right-leaning + male (mixed) | 75% |
+| `split_base_2k.json` | — | 0% (balanced baseline) |
+
+For example, `split_lowadult10.json` places 10% of the "low salary + adult" identities into the forget set, while the other 90% remain in the retain set. The number in the filename indicates the fraction of the given protected group selected for forgetting. Each scenario has 10%, 50%, and 90% variants, ranging from mild to extreme imbalance.
+
+The full dataset is available on [**Huggingface**](https://huggingface.co/datasets/argmaxxer/FAIRGET)
 
 ---
 
@@ -61,6 +88,7 @@ accelerate launch --mixed_precision bf16 main.py \
   --save_dir <OUTPUT_DIR>/model \
   --eval_output_dir <OUTPUT_DIR>/eval \
   --splits_path data/<SPLIT>.json \
+  --hf_dataset argmaxxer/FAIRGET \
   --batch_size 16 \
   --lr 2e-5 \
   --lora_rank 64 \
@@ -75,7 +103,7 @@ accelerate launch --mixed_precision bf16 main.py \
 
 ## Unlearning
 
-The general command follows the pattern of:
+Examples of hyperparameter configurations are available in [BASELINES.md](./BASELINES.md), the general command follows the pattern of:
 
 ```python
 accelerate launch --mixed_precision bf16 main.py \
@@ -92,9 +120,7 @@ accelerate launch --mixed_precision bf16 main.py \
   --method <METHOD> \
   --ray_tune_report
 ```
-more examples are available in [BASELINES.md](./BASELINES.md) 
-
-The final results will have this structure:
+Both `--finetune` and `--forget` automatically launch `auto_eval` at the end of the run, the metrics computed after evaluation will be saved along the inference and configuration files and the final directory will follow this structure:
 
 ```
 OUT_DIR/<run_name>
@@ -114,7 +140,7 @@ OUT_DIR/<run_name>
 
 ## Evaluation
 
-Evaluation can be ran standalone with:
+Evaluation can be also be run standalone with:
 
 ```python
 python auto_eval.py \
