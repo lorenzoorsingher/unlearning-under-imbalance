@@ -75,6 +75,24 @@ accelerate launch --mixed_precision bf16 main.py \
 ```
 more examples are available in [BASELINES.md](./BASELINES.md) 
 
+The final results will have this structure:
+
+```
+OUT_DIR/<run_name>
+├── eval
+│   └── <EVAL_ID>
+│       └── run_0
+│           ├── args.json                     # args for run and eval
+│           ├── fairness_text_image.jsonl     # fairness eval outputs
+│           ├── generation_text_image.jsonl   # generation eval outputs
+│           ├── metrics.csv                   # metrics results
+│           └── splits.json                   # data split for the run
+└── model
+    ├── <RUN_ID>
+    │   └── checkpoint files...
+    └── tune_result.json                      # run recap with results
+```
+
 ## Evaluation
 
 Evaluation can be ran standalone with:
